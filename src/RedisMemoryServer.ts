@@ -4,7 +4,8 @@ import getPort from 'get-port';
 import { isNullOrUndefined } from './util/db_util';
 import RedisInstance from './util/RedisInstance';
 import { RedisBinaryOpts } from './util/RedisBinary';
-import { RedisMemoryInstancePropT, SpawnOptions } from './types';
+import RedisModuleBinary from './util/RedisModuleBinary';
+import { RedisMemoryInstancePropT, SpawnOptions, RedisModulesOpts, RedisModuleOpts } from './types';
 import debug from 'debug';
 
 const log = debug('RedisMS:RedisMemoryServer');
@@ -19,6 +20,10 @@ export interface RedisMemoryServerOptsT {
   binary?: RedisBinaryOpts;
   spawn?: SpawnOptions;
   autoStart?: boolean;
+  /**
+   * Module configuration. Allows loading Redis modules (e.g. RedisJSON).
+   */
+  modules?: RedisModulesOpts;
 }
 
 /**
@@ -137,6 +142,12 @@ export default class RedisMemoryServer {
 
     log(`Starting Redis instance with following options: ${JSON.stringify(data)}`);
 
+    // Resolve module paths
+    const modulePaths = await this._resolveModulePaths();
+    if (modulePaths.length > 0) {
+      log(`Loading modules: ${modulePaths.join(', ')}`);
+    }
+
     // Download if not exists redis binaries in ~/.redis-prebuilt
     // After that startup Redis instance
     const instance = await RedisInstance.run({
@@ -147,6 +158,7 @@ export default class RedisMemoryServer {
       },
       binary: this.opts.binary,
       spawn: this.opts.spawn,
+      modulePaths,
     });
 
     return {
@@ -154,6 +166,53 @@ export default class RedisMemoryServer {
       instance: instance,
       childProcess: instance.childProcess ?? undefined, // convert null | undefined to undefined
     };
+  }
+
+  /**
+   * Resolve all module binary paths from the modules configuration
+   * @private
+   */
+  async _resolveModulePaths(): Promise<string[]> {
+    const modulesOpts = this.opts.modules;
+    if (!modulesOpts) {
+      return [];
+    }
+
+    const moduleConfigs: RedisModuleOpts[] = [];
+
+    // Handle shorthand enableJSON option
+    if (modulesOpts.enableJSON) {
+      moduleConfigs.push({ name: 'rejson' });
+    }
+
+    // Handle explicit modules list
+    if (modulesOpts.modules) {
+      for (const mod of modulesOpts.modules) {
+        // Avoid duplicates
+        if (!moduleConfigs.some((m) => m.name === mod.name)) {
+          moduleConfigs.push(mod);
+        }
+      }
+    }
+
+    if (moduleConfigs.length === 0) {
+      return [];
+    }
+
+    // Resolve each module
+    const paths: string[] = [];
+    for (const mod of moduleConfigs) {
+      log(`Resolving module "${mod.name}"...`);
+      const modulePath = await RedisModuleBinary.getPath(mod);
+      // If module has additional args, append them after the path
+      if (mod.args && mod.args.length > 0) {
+        paths.push(`${modulePath} ${mod.args.join(' ')}`);
+      } else {
+        paths.push(modulePath);
+      }
+    }
+
+    return paths;
   }
 
   /**

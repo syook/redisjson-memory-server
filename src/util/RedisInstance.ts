@@ -22,6 +22,11 @@ export interface RedisServerOps {
 
   // child process spawn options
   spawn?: SpawnOptions;
+
+  /**
+   * Paths to module .so files to load via --loadmodule
+   */
+  modulePaths?: string[];
 }
 
 /**
@@ -82,6 +87,13 @@ export default class RedisInstance {
     result.push('--bind', ip || '127.0.0.1');
     if (port) {
       result.push('--port', port.toString());
+    }
+
+    // Load modules via --loadmodule
+    if (this.opts.modulePaths && this.opts.modulePaths.length > 0) {
+      for (const modulePath of this.opts.modulePaths) {
+        result.push('--loadmodule', modulePath);
+      }
     }
 
     return result.concat(args ?? []);
@@ -285,6 +297,10 @@ export default class RedisInstance {
       }
     } else if (/\*\*\*aborting after/i.test(line)) {
       this.instanceFailed('redis-server internal error');
+    } else if (/Error loading.*module/i.test(line) || /Module.*failed to load/i.test(line)) {
+      this.instanceFailed(`redis-server module loading error: ${line.trim()}`);
+    } else if (/Can't open the log file/i.test(line)) {
+      this.instanceFailed('redis-server cannot open log file');
     }
   }
 }

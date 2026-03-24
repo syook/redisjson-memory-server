@@ -1,10 +1,11 @@
-# Redis In-Memory Server
+# RedisJSON Memory Server
 
-This package spins up a real Redis server programmatically from Node.js, for testing or mocking during development.
+> Forked from [redis-memory-server](https://github.com/mhassan1/redis-memory-server) with added RedisJSON module support.
+
+This package spins up a real Redis server programmatically from Node.js, for testing or mocking during development — with optional **RedisJSON module** support for native JSON data type commands (`JSON.SET`, `JSON.GET`, etc.).
+
 It holds the data in memory. Each `redis-server` process takes about 4Mb of memory.
 The server will allow you to connect your favorite client library to the Redis server and run integration tests isolated from each other.
-
-It is inspired heavily by [mongodb-memory-server](https://npmjs.com/package/mongodb-memory-server).
 
 On install, it [downloads](#configuring-which-redis-server-binary-to-use) the Redis source,
 compiles the `redis-server` binary, and saves it to a cache folder.
@@ -37,6 +38,11 @@ It works in Travis CI without additional `services` or `addons` in `.travis.yml`
     - [Options which can be set via `package.json`](#options-which-can-be-set-via-packagejson)
     - [Simple test with `ioredis`](#simple-test-with-ioredis)
     - [Debug mode](#debug-mode)
+  - [RedisJSON Module Support](#redisjson-module-support)
+    - [How It Works](#how-it-works)
+    - [Quickstart — `enableJSON` shorthand](#quickstart--enablejson-shorthand)
+    - [Using a pre-built module binary](#using-a-pre-built-module-binary)
+    - [Module Configuration Reference](#module-configuration-reference)
   - [Credits](#credits)
   - [License](#license)
 
@@ -220,9 +226,106 @@ or
 ```
 
 
+## RedisJSON Module Support
+
+This package supports loading the RedisJSON module, enabling native JSON data type support (`JSON.SET`, `JSON.GET`, etc.) for testing with Redis Stack-like capabilities.
+
+### How It Works
+
+RedisJSON is a Redis module that adds native JSON data type support. This implementation:
+
+1. **Resolves the module binary** — via a pre-built system path, cache, or by downloading and building from source
+2. **Passes `--loadmodule /path/to/librejson.so`** to the `redis-server` process at startup
+3. **Detects module load errors** in stdout and surfaces them clearly
+
+> **Redis 8+ Note:** Starting with Redis 8, JSON commands are built into Redis natively. If you're using Redis 8+, you don't need this module system at all — just use `redis-memory-server` normally and JSON commands will be available.
+
+### Quickstart — `enableJSON` shorthand
+
+```typescript
+import RedisMemoryServer from 'redis-memory-server';
+
+const server = new RedisMemoryServer({
+  modules: {
+    enableJSON: true,
+  },
+});
+
+const host = await server.getHost();
+const port = await server.getPort();
+
+// Now use any Redis client with JSON commands:
+// JSON.SET, JSON.GET, JSON.DEL, etc.
+```
+
+### Using a pre-built module binary
+
+If you already have `librejson.so` on your system (e.g. from a Redis Stack installation), point to it directly — no download or build step required:
+
+```typescript
+const server = new RedisMemoryServer({
+  modules: {
+    modules: [
+      {
+        name: 'rejson',
+        systemModule: '/opt/redis-stack/lib/rejson.so',
+      },
+    ],
+  },
+});
+```
+
+Or via environment variable:
+
+```bash
+REDISMS_MODULE_REJSON_SYSTEM_BINARY=/opt/redis-stack/lib/rejson.so
+```
+
+You can also specify a version or pass module arguments:
+
+```typescript
+const server = new RedisMemoryServer({
+  modules: {
+    modules: [
+      {
+        name: 'rejson',
+        version: '2.6.0', // downloads this specific tag from GitHub
+        args: ['SOME_CONFIG', 'value'], // extra args after --loadmodule <path>
+      },
+    ],
+  },
+});
+```
+
+### Module Configuration Reference
+
+#### `RedisMemoryServerOptsT.modules`
+
+| Property | Type | Description |
+|---|---|---|
+| `enableJSON` | `boolean` | Shorthand to enable RedisJSON with defaults |
+| `modules` | `RedisModuleOpts[]` | Explicit list of modules to load |
+
+#### `RedisModuleOpts`
+
+| Property | Type | Default | Description |
+|---|---|---|---|
+| `name` | `'rejson'` | *(required)* | Module identifier |
+| `version` | `string` | `'latest'` | Version tag to download from GitHub |
+| `systemModule` | `string` | — | Path to a pre-built `.so` binary (skips download) |
+| `downloadDir` | `string` | cache dir | Where to store downloaded/built module binaries |
+| `args` | `string[]` | — | Extra args appended after `--loadmodule <path>` |
+
+#### Module Environment Variables
+
+| Variable | Description |
+|---|---|
+| `REDISMS_MODULE_REJSON_SYSTEM_BINARY` | Path to a pre-built `librejson.so` |
+| `REDISMS_MODULE_DOWNLOAD_DIR` | Override the default module download/cache directory |
+
 ## Credits
 
-This package is inspired heavily by [mongodb-memory-server](https://npmjs.com/package/mongodb-memory-server).
+Forked from [redis-memory-server](https://github.com/mhassan1/redis-memory-server) by [@mhassan1](https://github.com/mhassan1), which is inspired by [mongodb-memory-server](https://npmjs.com/package/mongodb-memory-server).
 
 ## License
 

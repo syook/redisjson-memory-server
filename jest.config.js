@@ -1,5 +1,6 @@
 module.exports = {
   preset: 'ts-jest',
+  watchman: false,
   moduleFileExtensions: ['ts', 'tsx', 'js', 'jsx', 'json', 'node'],
   transform: {
     '^.+\\.ts$': [

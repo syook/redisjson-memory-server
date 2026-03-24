@@ -1,13 +1,13 @@
 {
-  "name": "redis-memory-server",
+  "name": "redisjson-memory-server",
   "version": "0.16.0",
-  "description": "Redis Server for testing. The server will allow you to connect your favorite client library to the Redis Server and run parallel integration tests isolated from each other.",
+  "description": "Redis Server with RedisJSON module support for testing. Spins up real Redis instances with JSON capabilities, allowing parallel integration tests isolated from each other.",
   "bin": "bin/index.js",
   "main": "lib/index.js",
   "types": "lib/index.d.ts",
   "repository": {
     "type": "git",
-    "url": "https://github.com/mhassan1/redis-memory-server.git"
+    "url": "https://github.com/syook/redisjson-memory-server.git"
   },
   "engines": {
     "node": ">=18"
@@ -18,15 +18,18 @@
   ],
   "keywords": [
     "redis",
+    "redisjson",
+    "json",
     "mock",
     "stub",
-    "redis-prebuilt"
+    "redis-prebuilt",
+    "redis-stack"
   ],
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/mhassan1/redis-memory-server/issues"
+    "url": "https://github.com/syook/redisjson-memory-server/issues"
   },
-  "homepage": "https://github.com/mhassan1/redis-memory-server",
+  "homepage": "https://github.com/syook/redisjson-memory-server",
   "devDependencies": {
     "@commitlint/cli": "^19.8.1",
     "@commitlint/config-conventional": "^19.8.1",
@@ -54,11 +57,11 @@
     "globals": "^16.2.0",
     "husky": "^9.1.7",
     "ioredis": "^5.3.2",
-    "jest": "^30.0.0",
+    "jest": "^30.3.0",
     "lint-staged": "^16.1.2",
     "prettier": "^3.5.3",
     "standard-version": "^9.5.0",
-    "ts-jest": "^29.1.1",
+    "ts-jest": "^29.4.6",
     "typescript": "~5.8.3"
   },
   "lint-staged": {
