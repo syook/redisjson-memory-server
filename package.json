@@ -93,6 +93,7 @@
     "coverage": "cross-env REDISMS_DOWNLOAD_DIR=./tmp jest --coverage --runInBand",
     "lint": "yarn eslint && yarn tscheck",
     "release": "standard-version",
+    "prepare": "tsc -p ./tsconfig.build.json",
     "prepublishOnly": "yarn build",
     "eslint": "eslint '**/*.{js,ts}'",
     "test": "yarn lint && yarn coverage",
