@@ -1,6 +1,6 @@
 {
   "name": "redisjson-memory-server",
-  "version": "0.16.0",
+  "version": "1.0.0",
   "description": "Redis Server with RedisJSON module support for testing. Spins up real Redis instances with JSON capabilities, allowing parallel integration tests isolated from each other.",
   "bin": "bin/index.js",
   "main": "lib/index.js",
